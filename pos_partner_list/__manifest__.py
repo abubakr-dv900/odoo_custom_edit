@@ -1,6 +1,6 @@
 {
 "name":"pos partner due balance list in mobile",
-"version":"1.0.0"
+"version":"19.0.0.1.0",
 "author":"abubakr",
 "depends":["point_of_sale","pos_settle_due"],
 "description":"this odoo module add partner list in mobile device",
