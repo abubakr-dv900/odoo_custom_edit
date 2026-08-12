@@ -19,7 +19,7 @@
   /* Primary / $green */
   .text-c { color: #198754 !important; } /* Odoo/Bootstrap's standard success/green */
   .text-c { color: #198754 !important; }
-
+  .text-gray{color:#444 !important; line-height:1.5 !important;}
   /* Green shades (Bootstrap 5 palette) */
   .text-c-100 { color: #d1e7dd !important; }
   .text-c-200 { color: #badbcc !important; }
@@ -54,6 +54,40 @@
 .border_5{
   border-radius: 5px !important;
 }
+.product-table {
+    width: 100%;
+    table-layout: fixed;
+    border: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+.product-table th,
+.product-table td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px 6px;
+    border: 0 !important;
+}
+
+.product-table th + th,
+.product-table td + td {
+    border-left: 1px solid #badbcc !important;
+}
+
+.product-table tbody tr + tr td {
+    border-top: 1px solid #badbcc !important;
+}
+
+.product-table tbody tr:first-child td {
+    border-top: 1px solid #badbcc !important;
+}
+
+.product-table th {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
+    font-weight: 700;
+}
   
 </style>
     <t t-set="header_title">
@@ -64,24 +98,41 @@
     </t>
     <t t-call="custom_report.custom_header_report"/>
 
-    <div class="row">
+
+  <div class='continer mb-5'>
+
+        <div class="row">
             <div class="col">
-        
+                <span class="text-c-600" >From :</span>
+                <div class="text-c-700 fw-bold fs-4">
+                 <t t-esc="doc.company_id.name"/>
+                </div>
+                <div class="text-gray fs-6 ">
+                    <span t-esc="doc.company_id.street"/> , <span t-esc="doc.company_id.street2"/> <br/>
+                    <span t-esc="doc.company_id.city"/>,<span t-esc="doc.company_id.state_id.name"/>,<span t-esc="doc.company_id.zip"/><br/>
+                    <span t-esc="doc.company_id.country_id.name"/> 
+                </div>
+            </div>
+
+                      <div class="col">
+              <span class="text-c-600" >  To :</span>
                 <div class="text-c-700 fw-bold fs-4">
                  <t t-esc="doc.partner_id.name"/>
                 </div>
-                <div class="text-c-600 fs-6 fw-bolder">
+                <div class="text-gray fs-6 ">
                     <span t-esc="doc.partner_id.street"/> , <span t-esc="doc.partner_id.street2"/> <br/>
                     <span t-esc="doc.partner_id.city"/>,<span t-esc="doc.partner_id.state_id.name"/>,<span t-esc="doc.partner_id.zip"/><br/>
                     <span t-esc="doc.partner_id.country_id.name"/> 
                 </div>
-                <p t-if="doc.partner_id.vat" class="mb-0">
+                <p t-if="doc.partner_id.vat" class="mb-0 text-gray">
                     <t t-if="doc.company_id.account_fiscal_country_id.vat_label" t-out="doc.company_id.account_fiscal_country_id.vat_label"/>
                     <t t-else="">Tax ID</t>: <span t-field="doc.partner_id.vat"/>
                 </p>
             </div>
-        </div>
         
+        </div>
+      </div>
+
 
 
         <t t-if="doc.partner_shipping_id == doc.partner_invoice_id and doc.partner_invoice_id !=doc.partner_id or doc.partner_shipping_id != doc.partner_invoice_id">
@@ -141,7 +192,7 @@
       <div class="page">
 
 
-      <div class=" row bg-c-100 border_10 px-4 py-4 my-4">
+      <!-- <div class=" row bg-c-100 border_10 px-4 py-4 my-4">
 
       <div class="col " >
         <span class="fs-5 text-c-700 ">
@@ -174,14 +225,63 @@
 
       </div>
       </div>
+ -->
 
 
 
+<div class="container mt-1 mb-5">
+<div class="row border_5 bg-c-200 mt-1  ">
+    <div class="col p-3 " style="border-right: 1px solid #0d4b35 !important;">
+<span class="text-c-500">Your Reference</span> 
+                    <div t-field="doc.name" class="text-c-600 "></div>
 
 
-        
-      
-                
+    </div>
+
+    <div class="col p-3 " style="border-right: 1px solid #0d4b35 !important;">
+<span class="text-c-500">Order Date</span> 
+                    <div t-esc="doc.date_order.strftime('%Y/%m/%d')" class="text-c-600 "></div>
+    </div>
+
+    <div class="col p-3 ">
+       <div class="text-c-500">GRAND TOTAL</div>
+       <div t-field="doc.amount_total" class="text-c-600 fs-3 fw-bold"/>
+       <!-- <div class="text_gray"> Salesperson <span t-field="doc.user_id.name"/></div> -->
+    </div>
+</div>
+</div>
+<table class="product-table">
+    <thead>
+        <tr>
+            <th style="width: 7%;">#</th>
+            <th style="width: 33%;">Product</th>
+            <th style="width: 15%;">Quantity</th>
+            <th style="width: 15%;">UoM</th>
+            <th style="width: 15%;">Price</th>
+            <th style="width: 15%;">Total</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>Diesel</td>
+            <td>100</td>
+            <td>Liter</td>
+            <td>2.50</td>
+            <td>250.00</td>
+        </tr>
+
+        <tr>
+            <td>2</td>
+            <td>Diesel</td>
+            <td>200</td>
+            <td>Liter</td>
+            <td>2.50</td>
+            <td>500.00</td>
+        </tr>
+    </tbody>
+</table>
             
       <!-- <div style="font-family: monospace; font-size: 10px; background: #f0f0f0; padding: 20px; margin: 20px; border: 1px solid #ccc;">
             <h3>Debug: Doc Fields</h3>
@@ -250,15 +350,15 @@ this is print mode off
   </div>
 </div>
    <div class="bg-c-700 mb-5" style="height:5px"/>
-    <div class='continer mb-5'>
+    <!-- <div class='continer mb-5'>
 
         <div class="row">
             <div class="col">
-        
+                From :
                 <div class="text-c-700 fw-bold fs-4">
                  <t t-esc="doc.company_id.name"/>
                 </div>
-                <div class="text-c-600 fs-6 fw-bolder">
+                <div class="fs-6 fw-bolder">
                     <span t-esc="doc.company_id.street"/> , <span t-esc="doc.company_id.street2"/> <br/>
                     <span t-esc="doc.company_id.city"/>,<span t-esc="doc.company_id.state_id.name"/>,<span t-esc="doc.company_id.zip"/><br/>
                     <span t-esc="doc.company_id.country_id.name"/> 
@@ -266,7 +366,7 @@ this is print mode off
             </div>
         </div>
         
-      </div>
+      </div> -->
 
 </template>
 </odoo>
