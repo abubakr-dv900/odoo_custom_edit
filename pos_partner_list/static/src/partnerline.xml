@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<templates id='template' xml:space='preserve'>
+
+    <t t.name="pos_partner_list"
+        t-inherit="point_of_sale.PartnerLine"
+        t-inherit-mode='extension'>
+
+        <xpath expr="//t[@t-if='ui.isSmall']//div[hasclass('partner-line-email')]"
+        position="after">
+
+        <div t-if="props.isBalanceDisplayed"
+            class="partner-line-balance p-1">
+
+        <span t-if="this.partnerInfos.totalDue gt 0"  class="d-block">
+        total Due:
+        <t t-esc="this.partnerInfos.totalDue"/>
+        </span>  
+        </div>
+        </xpath>
+    </t>
+
+
+
+</templates>
