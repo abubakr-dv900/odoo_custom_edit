@@ -309,7 +309,6 @@
 
                     <div class="q-content">
 
-                        <!-- Header: DIV based, avoids inherited table borders -->
                         <div class="q-header-box">
                             <div class="q-header-left">
                                 <div class="q-title">
