@@ -1,498 +1,1402 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
+
+    <!-- =========================================================
+         PAPER FORMAT
+         ========================================================= -->
+
+    <record id="paperformat_custom_sale_order" model="report.paperformat">
+
+        <field name="name">Custom Sale Order</field>
+        <field name="default" eval="False"/>
+
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+
+        <field name="dpi">90</field>
+
+        <!-- VERY IMPORTANT FOR FULL PAGE -->
+        <field name="disable_shrinking" eval="True"/>
+
+    </record>
+
+
+    <record id="sale.action_report_saleorder"
+            model="ir.actions.report">
+
+        <field name="paperformat_id"
+               ref="custom_report.paperformat_custom_sale_order"/>
+
+    </record>
+
+
+    <!-- =========================================================
+         SALE ORDER DESIGN
+         ========================================================= -->
 
     <template id="sale_report_custom_change"
               inherit_id="sale.report_saleorder_document">
 
-        <xpath expr="//t[@t-call='web.external_layout']" position="replace">
+        <xpath expr="//t[@t-call='web.external_layout']"
+               position="replace">
 
-            <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
-            <t t-set="is_proforma" t-value="env.context.get('proforma', False) or is_pro_forma"/>
 
-            <t t-call="web.basic_layout">
+            <!-- Keep standard variables -->
+
+            <t t-set="doc"
+               t-value="doc.with_context(lang=doc.partner_id.lang)"/>
+
+            <t t-set="is_proforma"
+               t-value="env.context.get('proforma', False) or is_pro_forma"/>
+
+
+            <!-- =================================================
+                 GET REAL PAPER SIZE FROM ODOO
+                 ================================================= -->
+
+            <t t-set="paperformat"
+               t-value="env['ir.actions.report'].get_paperformat_by_xmlid('sale.action_report_saleorder')"/>
+
+            <t t-set="page_width"
+               t-value="paperformat.print_page_width - paperformat.margin_left - paperformat.margin_right"/>
+
+            <t t-set="page_height"
+               t-value="paperformat.print_page_height - paperformat.margin_top - paperformat.margin_bottom"/>
+
+
+            <!-- =================================================
+                 ONLY ONE ARTICLE
+                 ================================================= -->
+
+            <div class="article az-sale-article"
+                 t-att-data-oe-model="doc._name"
+                 t-att-data-oe-id="doc.id"
+                 t-att-data-oe-lang="doc.env.context.get('lang')"
+                 t-att-style="'width:%smm;height:%smm;' % (page_width, page_height)">
+
 
                 <style>
-                    /* =========================================================
-                       PDF-safe quotation theme
-                       ========================================================= */
 
-                    .quotation-page {
+                    /* =====================================================
+                       ODOO PDF RESET
+                       ===================================================== */
+
+
+                    html,
+                    body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    body.o_body_pdf {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    body.o_body_pdf.container {
+                        width: 100% !important;
+                        max-width: none !important;
+
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    .az-sale-article {
                         position: relative;
-                        min-height: 980px;
-                        padding: 22px 28px 70px 28px;
+
+                        margin: 0 !important;
+                        padding: 0 !important;
+
                         overflow: hidden;
+
+                        border: 0 !important;
+                        outline: 0 !important;
+
+                        background: #ffffff;
+
                         font-family: Arial, Helvetica, sans-serif;
-                        color: #1f2933;
+                        color: #19212d;
+                    }
+
+                    .az-sale-article * {
+                        box-sizing: border-box;
+                    }
+
+
+                    /* =====================================================
+                       FULL PAGE
+                       ===================================================== */
+
+                    .az-page {
+                        position: relative;
+
+                        width: 100%;
+                        height: 100%;
+
+                        margin: 0;
+                        padding: 0;
+
+                        overflow: hidden;
+
                         background: #ffffff;
                     }
 
-                    .q-green-900 { color: #063d2d !important; }
-                    .q-green-800 { color: #0a513d !important; }
-                    .q-green-700 { color: #0f684d !important; }
-                    .q-green-600 { color: #198754 !important; }
-                    .q-gray      { color: #4b5563 !important; }
 
-                    .q-top-curve {
+                    /* =====================================================
+                       LEFT SIDEBAR
+                       ===================================================== */
+
+                    .az-sidebar {
                         position: absolute;
+
                         top: 0;
-                        right: 0;
-                        width: 355px;
-                        height: 150px;
-                        z-index: 0;
-                    }
-
-                    .q-bottom-curve {
-                        position: absolute;
-                        left: 0;
                         bottom: 0;
-                        width: 300px;
-                        height: 105px;
-                        z-index: 0;
-                    }
-
-                    .q-content {
-                        position: relative;
-                        z-index: 2;
-                    }
-
-                    /* Header uses no HTML table, so Odoo table styles cannot add a border */
-                    .q-header-box {
-                        position: relative;
-                        width: 100%;
-                        height: 62px;
-                        margin-bottom: 18px;
-                        border: none !important;
-                        outline: none !important;
-                        box-shadow: none !important;
-                        background: transparent !important;
-                    }
-
-                    .q-header-left {
-                        position: absolute;
                         left: 0;
-                        top: 2px;
-                        width: 34%;
-                        border: none !important;
-                    }
 
-                    .q-header-center {
-                        position: absolute;
-                        left: 34%;
-                        top: 0;
                         width: 32%;
-                        height: 62px;
-                        text-align: center;
-                        border: none !important;
+
+                        margin: 0;
+                        padding: 0;
+
+                        background: #202a39;
+                        color: #ffffff;
                     }
 
-                    .q-header-right {
+
+                    /* =====================================================
+                       LEFT: BRAND
+                       ===================================================== */
+
+                    .az-brand {
                         position: absolute;
-                        right: 0;
-                        top: 0;
-                        width: 34%;
-                        height: 62px;
-                        border: none !important;
+
+                        top: 5%;
+                        left: 16%;
+                        right: 10%;
                     }
 
-                    .q-title {
-                        font-size: 31px;
+                    .az-brand-logo {
+                        margin: 0;
+
+                        font-family: Georgia, "Times New Roman", serif;
+                        font-size: 5.1em;
+                        line-height: .8;
+
+                        font-weight: normal;
+                        letter-spacing: -.08em;
+
+                        color: #ffffff;
+                    }
+
+                    .az-brand-name {
+                        margin-top: 5%;
+
+                        font-size: 1.15em;
+                        line-height: 1.2;
+
+                        font-weight: 600;
+
+                        color: #ffffff;
+                    }
+
+
+                    /* =====================================================
+                       LEFT: INFORMATION
+                       ===================================================== */
+
+                    .az-sidebar-info {
+                        position: absolute;
+
+                        top: 20%;
+                        left: 16%;
+                        right: 10%;
+                    }
+
+                    .az-info-section {
+                        margin-bottom: 14%;
+                    }
+
+                    .az-info-label {
+                        margin-bottom: 5%;
+
+                        font-size: .78em;
                         line-height: 1;
-                        font-weight: 800;
-                        letter-spacing: .3px;
-                        color: #063d2d;
+
+                        font-weight: 700;
+                        letter-spacing: .06em;
+
                         text-transform: uppercase;
+
+                        color: #b7bec8;
                     }
 
-                    .q-title-mark {
-                        width: 76px;
-                        height: 4px;
-                        margin-top: 10px;
-                        background: #0f684d;
-                        border-radius: 4px;
+                    .az-info-value {
+                        font-size: .93em;
+                        line-height: 1.65;
+
+                        font-weight: 400;
+
+                        color: #ffffff;
                     }
 
-                    .q-logo {
-                        max-height: 58px;
-                        max-width: 190px;
+
+                    /* =====================================================
+                       LEFT: TOTAL BAND
+                       ===================================================== */
+
+                    .az-total-band {
+                        position: absolute;
+
+                        left: 0;
+                        right: 0;
+                        bottom: 11.8%;
+
+                        padding: 8% 16%;
+
+                        background: #ff604c;
+                        color: #ffffff;
                     }
 
-                    .q-company {
+                    .az-total-label {
+                        margin-bottom: 5%;
+
+                        font-size: 1.15em;
+                        line-height: 1;
+
+                        font-weight: 700;
+
+                        text-transform: uppercase;
+
+                        color: #ffffff;
+                    }
+
+                    .az-total-value {
+                        font-size: 2.75em;
+                        line-height: 1;
+
+                        font-weight: 700;
+
+                        white-space: nowrap;
+
+                        color: #ffffff;
+                    }
+
+
+                    /* =====================================================
+                       LEFT: THANK YOU
+                       ===================================================== */
+
+                    .az-thank-you {
+                        position: absolute;
+
+                        left: 16%;
+                        right: 10%;
+                        bottom: 6%;
+
+                        font-size: .85em;
+                        line-height: 1.4;
+
+                        font-weight: 500;
+
+                        color: #ffffff;
+                    }
+
+
+                    /* =====================================================
+                       RIGHT MAIN AREA
+                       ===================================================== */
+
+                    .az-main {
+                        position: absolute;
+
+                        top: 0;
+                        right: 0;
+                        bottom: 0;
+                        left: 32%;
+
+                        background: #ffffff;
+
+                        color: #18202c;
+                    }
+
+                    .az-main-inner {
                         position: relative;
-                        z-index: 3;
-                        text-align: right;
-                        font-size: 19px;
-                        line-height: 58px;
-                        font-weight: 700;
-                        color: #ffffff;
-                        padding-right: 6px;
-                        border: none !important;
+
+                        width: 100%;
+                        height: 100%;
+
+                        padding: 8% 8% 6% 7%;
                     }
 
-                    .q-rule {
+
+                    /* =====================================================
+                       TITLE
+                       ===================================================== */
+
+                    .az-title {
+                        margin: 0;
+
+                        font-family: Georgia, "Times New Roman", serif;
+
+                        font-size: 4.6em;
+                        line-height: .95;
+
+                        font-weight: normal;
+
+                        letter-spacing: -.035em;
+
+                        color: #151c27;
+                    }
+
+                    .az-title-line {
+                        width: 100%;
                         height: 2px;
-                        background: #0f684d;
-                        margin: 0 0 24px 0;
+
+                        margin-top: 4%;
+
+                        background: #ff604c;
                     }
 
-                    .q-party-table {
+
+                    /* =====================================================
+                       ORDER META
+                       ===================================================== */
+
+                    .az-meta {
+                        margin-top: 9%;
+                    }
+
+                    .az-meta-row {
+                        position: relative;
+
                         width: 100%;
-                        table-layout: fixed;
-                        border-collapse: separate;
-                        border-spacing: 0;
-                        margin-bottom: 23px;
+
+                        margin-bottom: 4.2%;
+
+                        min-height: 1.3em;
                     }
 
-                    .q-party-table td {
-                        width: 50%;
+                    .az-meta-label {
+                        display: inline-block;
+
+                        width: 31%;
+
                         vertical-align: top;
-                        border: 0;
-                        padding: 0 22px 0 0;
-                    }
 
-                    .q-party-table td + td {
-                        padding-left: 22px;
-                        padding-right: 0;
-                    }
+                        font-size: .78em;
+                        line-height: 1.4;
 
-                    .q-party-label {
-                        color: #0f684d;
-                        font-size: 13px;
                         font-weight: 700;
-                        margin-bottom: 6px;
+                        letter-spacing: .04em;
+
+                        text-transform: uppercase;
+
+                        color: #727272;
                     }
 
-                    .q-party-name {
-                        color: #063d2d;
-                        font-size: 20px;
-                        font-weight: 800;
-                        margin-bottom: 7px;
+                    .az-meta-value {
+                        display: inline-block;
+
+                        width: 60%;
+
+                        vertical-align: top;
+
+                        font-size: .9em;
+                        line-height: 1.4;
+
+                        font-weight: 400;
+
+                        color: #151b24;
                     }
 
-                    .q-party-detail {
-                        font-size: 13px;
-                        line-height: 1.55;
-                        color: #4b5563;
+
+                    /* =====================================================
+                       PRODUCTS TABLE
+                       ===================================================== */
+/* =====================================================
+   PRODUCTS - ARTICLE LAYOUT
+   ===================================================== */
+
+.az-products {
+    display: block;
+    width: 100%;
+    margin-top: 12%;
+
+    border: 0 !important;
+    outline: 0 !important;
+}
+
+
+/* HEADER */
+
+.az-product-header {
+    display: block;
+    width: 100%;
+
+    margin: 0;
+    padding: 0 0 3% 0;
+
+    border: 0;
+    border-bottom: 1px solid #c9cdd2;
+
+    font-size: 0;
+}
+
+
+/* NORMAL PRODUCT ROW */
+
+.az-product-row {
+    display: block;
+    width: 100%;
+
+    margin: 0;
+    padding: 4.5% 0;
+
+    border: 0;
+    border-bottom: 1px solid #e0e2e5;
+
+    font-size: 0;
+}
+
+
+/* COLUMNS */
+
+.az-product-header > span,
+.az-product-row > span {
+    display: inline-block;
+
+    margin: 0;
+    padding-left: 1.2%;
+    padding-right: 1.2%;
+
+    vertical-align: middle;
+}
+
+
+/* HEADER TEXT */
+
+.az-product-header > span {
+    font-size: .64rem;
+    line-height: 1.2;
+
+    font-weight: 700;
+    letter-spacing: .04em;
+
+    text-transform: uppercase;
+
+    color: #666b73;
+}
+
+
+/* PRODUCT TEXT */
+
+.az-product-row > span {
+    font-size: .76rem;
+    line-height: 1.4;
+
+    color: #202631;
+}
+
+
+/* COLUMN WIDTHS */
+
+.az-col-description {
+    width: 42%;
+    text-align: left;
+}
+
+.az-col-qty {
+    width: 10%;
+    text-align: center;
+}
+
+.az-col-price {
+    width: 20%;
+    text-align: right;
+}
+
+.az-col-tax {
+    width: 13%;
+    text-align: center;
+}
+
+.az-col-amount {
+    width: 15%;
+    text-align: right;
+}
+
+
+/* SECTION */
+
+.az-section-row {
+    display: block;
+    width: 100%;
+
+    margin: 0;
+    padding: 5% 1.2% 2.5% 1.2%;
+
+    border: 0;
+
+    font-size: .78rem;
+    line-height: 1.4;
+    font-weight: 700;
+
+    color: #171d27;
+}
+
+
+/* SUBSECTION */
+
+.az-subsection-row {
+    display: block;
+    width: 100%;
+
+    margin: 0;
+    padding: 3.5% 1.2% 2.5% 1.2%;
+
+    border: 0;
+
+    font-size: .76rem;
+    line-height: 1.4;
+    font-weight: 600;
+
+    color: #303844;
+}
+
+
+/* NOTE */
+
+.az-note-row {
+    display: block;
+    width: 100%;
+
+    margin: 0;
+    padding: 2.5% 1.2% 4% 1.2%;
+
+    border: 0;
+    border-bottom: 1px solid #e0e2e5;
+
+    font-size: .72rem;
+    line-height: 1.4;
+    font-style: italic;
+
+    color: #6a7079;
+}
+
+
+                    /* =====================================================
+                       TOTALS
+                       ===================================================== */
+
+                    .az-summary {
+                        width: 53%;
+
+                        margin-top: 9%;
+                        margin-left: 47%;
                     }
 
-                    .q-meta {
+                    .az-summary-top-line {
                         width: 100%;
-                        table-layout: fixed;
-                        border-collapse: separate;
-                        border-spacing: 0;
-                        margin: 6px 0 22px 0;
-                        background: #d9eee5;
-                        border: 1px solid #b7d9ca;
-                        border-radius: 10px;
-                        overflow: hidden;
+                        height: 1px;
+
+                        margin-bottom: 5%;
+
+                        background: #bfc1c4;
                     }
 
-                    .q-meta td {
-                        width: 33.333%;
-                        vertical-align: middle;
-                        padding: 14px 18px;
-                        border: 0;
-                    }
+                    .az-summary-row {
+                        position: relative;
 
-                    .q-meta td + td {
-                        border-left: 1px solid #8dbda8;
-                    }
-
-                    .q-meta-label {
-                        color: #198754;
-                        font-size: 12px;
-                        font-weight: 700;
-                        margin-bottom: 4px;
-                    }
-
-                    .q-meta-value {
-                        color: #0f684d;
-                        font-size: 15px;
-                        font-weight: 800;
-                    }
-
-                    .q-total-value {
-                        color: #063d2d;
-                        font-size: 25px;
-                        font-weight: 800;
-                        line-height: 1.1;
-                    }
-
-                    .q-products {
                         width: 100%;
-                        table-layout: fixed;
-                        border-collapse: separate !important;
-                        border-spacing: 0 !important;
-                        border: 1px solid #b7d9ca;
-                        border-radius: 9px;
-                        overflow: hidden;
-                        margin-top: 0;
+
+                        margin-bottom: 5%;
+
+                        font-size: .8em;
+                        line-height: 1.25;
                     }
 
-                    .q-products th,
-                    .q-products td {
-                        text-align: center;
-                        vertical-align: middle;
-                        border: 0;
-                        padding: 10px 7px;
-                        font-size: 12px;
-                    }
+                    .az-summary-label {
+                        display: inline-block;
 
-                    .q-products th {
-                        background: #0f684d;
-                        color: #ffffff;
-                        font-size: 12px;
-                        font-weight: 700;
-                    }
+                        width: 48%;
 
-                    .q-products th + th,
-                    .q-products td + td {
-                        border-left: 1px solid #c5ded3;
-                    }
-
-                    .q-products tbody tr + tr td {
-                        border-top: 1px solid #d9e9e2;
-                    }
-
-                    .q-products tbody tr:nth-child(even) td {
-                        background: #f7fbf9;
-                    }
-
-                    .q-products .product-name {
                         text-align: left;
-                        padding-left: 14px;
+
+                        color: #333a44;
+                    }
+
+                    .az-summary-value {
+                        display: inline-block;
+
+                        width: 50%;
+
+                        text-align: right;
+
+                        color: #333a44;
+                    }
+
+                    .az-summary-total {
+                        padding-top: 6%;
+
+                        border-top: 1px solid #bfc1c4;
+
+                        font-size: .88em;
+
                         font-weight: 700;
-                        color: #263238;
+
+                        color: #151b24;
                     }
 
-                    .q-products .amount {
+                    .az-summary-total .az-summary-label,
+                    .az-summary-total .az-summary-value {
                         font-weight: 700;
-                        color: #263238;
+                        color: #151b24;
                     }
 
-                    .q-footer {
-                        margin-top: 22px;
-                        padding-top: 12px;
-                        border-top: 1px solid #d6e6df;
-                        text-align: center;
+
+                    /* =====================================================
+                       PAYMENT INFORMATION
+                       ===================================================== */
+
+                    .az-payment {
+                        position: absolute;
+
+                        left: 7%;
+                        right: 8%;
+                        bottom: 7%;
                     }
 
-                    .q-footer-title {
-                        color: #0f684d;
-                        font-size: 14px;
-                        font-weight: 800;
+                 .az-payment-icon {
+    display: inline-block;
+    width: 11%;
+    vertical-align: top;
+}
+
+.az-bank-svg {
+    display: block;
+
+    width: 44px;
+    height: 44px;
+
+    margin: 0;
+    padding: 0;
+}
+
+                  
+
+                    .az-payment-content {
+                        display: inline-block;
+
+                        width: 87%;
+
+                        vertical-align: top;
                     }
 
-                    .q-footer-text {
-                        margin-top: 3px;
-                        color: #667085;
-                        font-size: 11px;
+                    .az-payment-title {
+                        margin-bottom: 4%;
+
+                        font-family: Georgia, "Times New Roman", serif;
+
+                        font-size: 1.55em;
+                        line-height: 1;
+
+                        font-weight: 700;
+
+                        color: #171e29;
                     }
 
-                    .q-note {
-                        margin-top: 16px;
-                        padding: 11px 13px;
-                        border-left: 4px solid #198754;
-                        background: #f1f8f5;
-                        color: #4b5563;
-                        font-size: 11px;
-                        line-height: 1.5;
+                    .az-payment-text {
+                        margin-bottom: 3%;
+
+                        font-size: .72em;
+                        line-height: 1.45;
+
+                        color: #46505e;
                     }
 
-                    /* Avoid Bootstrap spacing inconsistencies in wkhtmltopdf */
-                    .q-no-break {
-                        page-break-inside: avoid;
-                    }
                 </style>
 
-                <div class="quotation-page">
+
+                <!-- =====================================================
+                     PAGE
+                     ===================================================== -->
+
+<div class="az-page">
+
+    <!-- =================================================
+         LEFT SIDEBAR
+         ================================================= -->
+
+    <div class="az-sidebar">
 
 
-                    <div class="q-content">
+        <!-- BRAND -->
 
-                        <div class="q-header-box">
-                            <div class="q-header-left">
-                                <div class="q-title">
-                                    <span t-if="is_proforma">Pro-Forma Invoice</span>
-                                    <span t-elif="doc.state in ['draft', 'sent']">Quotation</span>
-                                    <span t-else="">Sale Order</span>
-                                </div>
-                                <div class="q-title-mark"></div>
-                            </div>
+        <div class="az-brand">
 
-                            <div class="q-header-center">
-                                <img t-if="doc.company_id.logo"
-                                     t-att-src="image_data_uri(doc.company_id.logo)"
-                                     class="q-logo"/>
-                            </div>
+            <div class="az-brand-logo">
+                AZ
+            </div>
 
-                            <div class="q-header-right">
-                                <div class="q-company">
-                                    <t t-esc="doc.company_id.name"/>
-                                </div>
-                            </div>
-                        </div>
+            <div class="az-brand-name">
+                <span t-field="doc.company_id.name"/>
+            </div>
 
-                        <div class="q-rule"/>
+        </div>
 
-                        <!-- From / To -->
-                        <table class="q-party-table q-no-break">
-                            <tr>
-                                <td>
-                                    <div class="q-party-label">From :</div>
-                                    <div class="q-party-name">
-                                        <t t-esc="doc.company_id.name"/>
-                                    </div>
-                                    <div class="q-party-detail">
-                                        <t t-if="doc.company_id.street">
-                                            <span t-esc="doc.company_id.street"/>
-                                        </t>
-                                        <t t-if="doc.company_id.street2">
-                                            <span>, </span><span t-esc="doc.company_id.street2"/>
-                                        </t>
-                                        <br t-if="doc.company_id.street or doc.company_id.street2"/>
 
-                                        <t t-if="doc.company_id.city">
-                                            <span t-esc="doc.company_id.city"/>
-                                        </t>
-                                        <t t-if="doc.company_id.state_id">
-                                            <span>, </span><span t-esc="doc.company_id.state_id.name"/>
-                                        </t>
-                                        <t t-if="doc.company_id.zip">
-                                            <span>, </span><span t-esc="doc.company_id.zip"/>
-                                        </t>
-                                        <br t-if="doc.company_id.city or doc.company_id.state_id or doc.company_id.zip"/>
+        <!-- =================================================
+             SIDEBAR INFORMATION
+             ================================================= -->
 
-                                        <span t-if="doc.company_id.country_id"
-                                              t-esc="doc.company_id.country_id.name"/>
-                                    </div>
-                                </td>
+        <div class="az-sidebar-info">
 
-                                <td>
-                                    <div class="q-party-label">To :</div>
-                                    <div class="q-party-name">
-                                        <t t-esc="doc.partner_id.name"/>
-                                    </div>
-                                    <div class="q-party-detail">
-                                        <t t-if="doc.partner_id.street">
-                                            <span t-esc="doc.partner_id.street"/>
-                                        </t>
-                                        <t t-if="doc.partner_id.street2">
-                                            <span>, </span><span t-esc="doc.partner_id.street2"/>
-                                        </t>
-                                        <br t-if="doc.partner_id.street or doc.partner_id.street2"/>
 
-                                        <t t-if="doc.partner_id.city">
-                                            <span t-esc="doc.partner_id.city"/>
-                                        </t>
-                                        <t t-if="doc.partner_id.state_id">
-                                            <span>, </span><span t-esc="doc.partner_id.state_id.name"/>
-                                        </t>
-                                        <t t-if="doc.partner_id.zip">
-                                            <span>, </span><span t-esc="doc.partner_id.zip"/>
-                                        </t>
-                                        <br t-if="doc.partner_id.city or doc.partner_id.state_id or doc.partner_id.zip"/>
+            <!-- FROM -->
 
-                                        <span t-if="doc.partner_id.country_id"
-                                              t-esc="doc.partner_id.country_id.name"/>
+            <div class="az-info-section">
 
-                                        <t t-if="doc.partner_id.vat">
-                                            <br/>
-                                            <strong>
-                                                <t t-if="doc.company_id.account_fiscal_country_id.vat_label"
-                                                   t-out="doc.company_id.account_fiscal_country_id.vat_label"/>
-                                                <t t-else="">Tax ID</t>
-                                            </strong>
-                                            <span>: </span>
-                                            <span t-field="doc.partner_id.vat"/>
-                                        </t>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <!-- Summary -->
-                        <table class="q-meta q-no-break">
-                            <tr>
-                                <td>
-                                    <div class="q-meta-label">Your Reference</div>
-                                    <div class="q-meta-value" t-field="doc.name"/>
-                                </td>
-
-                                <td>
-                                    <div class="q-meta-label">Order Date</div>
-                                    <div class="q-meta-value"
-                                         t-esc="doc.date_order.strftime('%Y/%m/%d')"/>
-                                </td>
-
-                                <td>
-                                    <div class="q-meta-label">GRAND TOTAL</div>
-                                    <div class="q-total-value" t-field="doc.amount_total"/>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <!-- Product lines -->
-                        <table class="q-products">
-                            <thead>
-                                <tr>
-                                    <th style="width: 7%;">#</th>
-                                    <th style="width: 33%;">Product</th>
-                                    <th style="width: 15%;">Quantity</th>
-                                    <th style="width: 15%;">UoM</th>
-                                    <th style="width: 15%;">Price</th>
-                                    <th style="width: 15%;">Total</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                <t t-foreach="doc.order_line" t-as="line">
-                                    <tr t-if="not line.display_type">
-                                        <td>
-                                            <t t-esc="line_index + 1"/>
-                                        </td>
-
-                                        <td class="product-name">
-                                            <span t-field="line.name"/>
-                                        </td>
-
-                                        <td>
-                                            <span t-field="line.product_uom_qty"/>
-                                        </td>
-
-                                        <td>
-                                            <span t-field="line.product_uom_id"/>
-                                        </td>
-
-                                        <td>
-                                            <span t-field="line.price_unit"/>
-                                        </td>
-
-                                        <td class="amount">
-                                            <span t-field="line.price_subtotal"/>
-                                        </td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-
-                        <!-- Optional terms -->
-                        <div t-if="doc.note" class="q-note q-no-break">
-                            <strong>Terms &amp; Notes</strong>
-                            <div t-field="doc.note"/>
-                        </div>
-
-                        <!-- Footer -->
-                        <div class="q-footer q-no-break">
-                            <div class="q-footer-title">Thank you for your business!</div>
-                            <div class="q-footer-text">
-                                We appreciate the opportunity to provide this quotation.
-                            </div>
-                        </div>
-
-                    </div>
+                <div class="az-info-label">
+                    FROM
                 </div>
 
-            </t>
+                <div class="az-info-value">
+
+                    <span t-field="doc.company_id.name"/>
+
+                    <br/>
+
+                    <!-- Dummy until company address fields
+                         are confirmed from source -->
+                    <span t-field="doc.company_id.street"/>
+                    <span t-field="doc.company_id.city"/>, <span t-field="doc.company_id.state_id.name"/>, <span t-field="doc.company_id.country_id.name"/>
+
+                    <br/>
+
+                    <span t-field="doc.company_id.email"/>
+
+                </div>
+
+            </div>
+
+
+            <!-- TO -->
+
+            <div class="az-info-section">
+
+                <div class="az-info-label">
+                    TO
+                </div>
+
+                <div class="az-info-value">
+
+                    <div t-field="doc.partner_id"
+                         t-options="{
+                             'widget': 'contact',
+                             'fields': ['name', 'address'],
+                             'no_marker': True
+                         }"/>
+
+                </div>
+
+            </div>
+
+
+            <!-- REFERENCE -->
+
+            <div class="az-info-section">
+
+                <div class="az-info-label">
+                    REF
+                </div>
+
+                <div class="az-info-value">
+                    <span t-field="doc.name"/>
+                </div>
+
+            </div>
+
+
+            <!-- DATE -->
+
+            <div class="az-info-section">
+
+                <div class="az-info-label">
+                    DATE
+                </div>
+
+                <div class="az-info-value">
+
+                    <span t-field="doc.date_order"
+                          t-options="{'widget': 'date'}"/>
+
+                </div>
+
+            </div>
+
+
+            <!-- VALID UNTIL -->
+
+            <div class="az-info-section">
+
+                <div class="az-info-label">
+                    VALID UNTIL
+                </div>
+
+                <div class="az-info-value">
+
+                    <t t-if="doc.validity_date">
+
+                        <span t-field="doc.validity_date"
+                              t-options="{'widget': 'date'}"/>
+
+                    </t>
+
+                    <t t-else="">
+                        -
+                    </t>
+
+                </div>
+
+            </div>
+
+
+            <!-- SALESPERSON -->
+
+            <div class="az-info-section">
+
+                <div class="az-info-label">
+                    SALESPERSON
+                </div>
+
+                <div class="az-info-value">
+
+                    <t t-if="doc.user_id.name">
+                        <span t-field="doc.user_id"/>
+                    </t>
+
+                    <t t-else="">
+                        -
+                    </t>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             SIDEBAR TOTAL
+
+             No direct amount_total field is shown in the
+             supplied report, so keep this dummy for now.
+             ================================================= -->
+
+        <div class="az-total-band">
+
+            <div class="az-total-label">
+                TOTAL
+            </div>
+
+            <div class="az-total-value">
+                <span t-field="doc.amount_total"
+                      t-options="{
+                          'widget': 'monetary',
+                          'display_currency': doc.currency_id
+                      }"/>
+            </div>
+
+        </div>
+
+
+        <!-- THANK YOU -->
+
+        <div class="az-thank-you">
+            Thank you for your business!
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =================================================
+         RIGHT SIDE
+         ================================================= -->
+
+    <div class="az-main">
+
+        <div class="az-main-inner">
+
+
+            <!-- =================================================
+                 TITLE
+                 ================================================= -->
+
+            <div class="az-title">
+
+                <t t-if="is_proforma">
+                    Pro-Forma Invoice
+                </t>
+
+                <t t-elif="doc.state in ['draft', 'sent']">
+                    Quotation
+                </t>
+
+                <t t-else="">
+                    Sale Order
+                </t>
+
+            </div>
+
+
+            <div class="az-title-line"></div>
+
+
+
+            <!-- =================================================
+                 META INFORMATION
+                 ================================================= -->
+
+       <div class="az-meta">
+
+    <!-- PAYMENT TERMS -->
+    <div t-if="doc.payment_term_id" class="az-meta-row">
+
+        <div class="az-meta-label">
+            PAYMENT TERMS:
+        </div>
+
+        <div class="az-meta-value">
+            <span t-field="doc.payment_term_id"/>
+        </div>
+
+    </div>
+
+
+    <!-- DELIVERY DATE -->
+    <div t-if="doc.commitment_date" class="az-meta-row">
+
+        <div class="az-meta-label">
+            DELIVERY:
+        </div>
+
+        <div class="az-meta-value">
+            <span t-field="doc.commitment_date"
+                  t-options="{'widget': 'date'}"/>
+        </div>
+
+    </div>
+
+
+    <!-- SALES TEAM -->
+    <div t-if="doc.team_id" class="az-meta-row">
+
+        <div class="az-meta-label">
+            SALES TEAM:
+        </div>
+
+        <div class="az-meta-value">
+            <span t-field="doc.team_id"/>
+        </div>
+
+    </div>
+
+</div>
+
+            <!-- =================================================
+                 ORDER LINE VARIABLES
+                 ================================================= -->
+
+            <t t-set="lines_to_report"
+               t-value="doc._get_order_lines_to_report()"/>
+
+            <t t-set="display_discount"
+               t-value="any(line.discount for line in lines_to_report)"/>
+
+            <t t-set="hide_taxes_details"
+               t-value="False"/>
+
+            <t t-set="display_taxes"
+               t-value="not hide_taxes_details and any(line._has_taxes() for line in lines_to_report)"/>
+
+            <t t-set="price_field"
+               t-value="'price_total' if hide_taxes_details else 'price_subtotal'"/>
+
+
+
+            <!-- =================================================
+                 PRODUCTS TABLE
+                 ================================================= -->
+
+    <article class="az-products">
+
+
+    <!-- HEADER -->
+
+    <article class="az-product-header">
+
+        <span class="az-col-description">
+            Description
+        </span>
+
+        <span class="az-col-qty">
+            Qty
+        </span>
+
+        <span class="az-col-price">
+            Unit Price
+        </span>
+
+        <span class="az-col-tax">
+            Taxes
+        </span>
+
+        <span class="az-col-amount">
+            Amount
+        </span>
+
+    </article>
+
+
+    <!-- ORDER LINES -->
+
+    <t t-foreach="lines_to_report"
+       t-as="line">
+
+
+        <t t-set="is_note"
+           t-value="line.display_type == 'line_note'"/>
+
+        <t t-set="is_section"
+           t-value="line.display_type == 'line_section'"/>
+
+        <t t-set="is_subsection"
+           t-value="line.display_type == 'line_subsection'"/>
+
+        <t t-set="is_combo"
+           t-value="line.product_type == 'combo'"/>
+
+
+
+        <!-- SECTION -->
+
+        <article t-if="is_section"
+                 class="az-section-row">
+
+            <span t-field="line.name"/>
+
+        </article>
+
+
+
+        <!-- SUBSECTION -->
+
+        <article t-elif="is_subsection"
+                 class="az-subsection-row">
+
+            <span t-field="line.name"/>
+
+        </article>
+
+
+
+        <!-- NOTE -->
+
+        <article t-elif="is_note"
+                 class="az-note-row">
+
+            <span t-field="line.name"/>
+
+        </article>
+
+
+
+        <!-- COMBO -->
+
+        <article t-elif="is_combo"
+                 class="az-product-row">
+
+            <span class="az-col-description">
+                <span t-field="line.name"/>
+            </span>
+
+            <span class="az-col-qty">
+                <span t-field="line.product_uom_qty"/>
+            </span>
+
+            <span class="az-col-price">
+
+                <span t-out="line._get_combo_totals(price_field)"
+                      t-options="{
+                          'widget': 'monetary',
+                          'display_currency': doc.currency_id
+                      }"/>
+
+            </span>
+
+            <span class="az-col-tax">
+                -
+            </span>
+
+            <span class="az-col-amount">
+
+                <span t-out="line._get_combo_totals(price_field)"
+                      t-options="{
+                          'widget': 'monetary',
+                          'display_currency': doc.currency_id
+                      }"/>
+
+            </span>
+
+        </article>
+
+
+
+        <!-- NORMAL PRODUCT -->
+
+        <article t-else=""
+                 class="az-product-row">
+
+
+            <!-- DESCRIPTION -->
+
+            <span class="az-col-description">
+
+                <span t-field="line.name"/>
+
+            </span>
+
+
+            <!-- QUANTITY -->
+
+            <span class="az-col-qty">
+
+                <span t-field="line.product_uom_qty"/>
+
+            </span>
+
+
+            <!-- UNIT PRICE -->
+
+            <span class="az-col-price">
+
+                <span t-field="line.price_unit"
+                      t-options="{
+                          'widget': 'monetary',
+                          'display_currency': line.currency_id
+                      }"/>
+
+            </span>
+
+
+            <!-- TAXES -->
+
+            <span class="az-col-tax">
+
+                <t t-set="taxes"
+                   t-value="', '.join(
+                       tax.tax_label
+                       for tax in line.tax_ids
+                       if tax.tax_label
+                   )"/>
+
+                <t t-if="taxes">
+                    <span t-out="taxes"/>
+                </t>
+
+                <t t-else="">
+                    -
+                </t>
+
+            </span>
+
+
+            <!-- AMOUNT -->
+
+            <span class="az-col-amount">
+
+                <t t-if="not line.is_downpayment">
+
+                    <span t-if="price_field == 'price_subtotal'"
+                          t-field="line.price_subtotal"
+                          t-options="{
+                              'widget': 'monetary',
+                              'display_currency': doc.currency_id
+                          }"/>
+
+                    <span t-else=""
+                          t-field="line.price_total"
+                          t-options="{
+                              'widget': 'monetary',
+                              'display_currency': doc.currency_id
+                          }"/>
+
+                </t>
+
+            </span>
+
+
+        </article>
+
+
+    </t>
+
+</article>
+
+
+            <!-- =================================================
+                 TOTALS
+
+                 We use Odoo's own tax totals template because
+                 doc.tax_totals is explicitly what the standard
+                 Sale Order report passes to it.
+                 ================================================= -->
+
+            <div class="az-summary">
+
+                <table class="o_total_table table table-borderless">
+
+                    <t t-call="sale.document_tax_totals">
+
+                        <t t-set="tax_totals"
+                           t-value="doc.tax_totals"/>
+
+                        <t t-set="currency"
+                           t-value="doc.currency_id"/>
+
+                    </t>
+
+                </table>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 PAYMENT INFORMATION
+                 ================================================= -->
+
+            <div class="az-payment">
+
+
+                <!-- ICON -->
+<t t-if="not is_html_empty(doc.payment_term_id.note) or not is_html_empty(doc.note)">  
+            <div class="az-payment-icon">
+
+    <svg class="az-bank-svg"
+         viewBox="0 0 64 64"
+         xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Roof -->
+        <path d="M8 22 L32 8 L56 22"
+              fill="none"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <!-- Top line -->
+        <line x1="6" y1="25" x2="58" y2="25"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <!-- Columns -->
+        <line x1="16" y1="29" x2="16" y2="50"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <line x1="27" y1="29" x2="27" y2="50"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <line x1="37" y1="29" x2="37" y2="50"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <line x1="48" y1="29" x2="48" y2="50"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <!-- Bottom lines -->
+        <line x1="11" y1="52" x2="53" y2="52"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+        <line x1="7" y1="57" x2="57" y2="57"
+              stroke="#ff604c"
+              stroke-width="2.5"/>
+
+    </svg>
+
+</div>
+</t>
+
+
+                <!-- PAYMENT CONTENT -->
+
+                <div class="az-payment-content">
+<t t-if="not is_html_empty(doc.payment_term_id.note)">
+                    <div class="az-payment-title">
+                        Payment Terms
+                    </div>
+
+
+                    <!-- Dummy bank information -->
+
+   
+
+
+                    <!-- PAYMENT TERM NOTE -->
+
+                    <div class="az-payment-text">
+
+                       
+
+                            <span t-field="doc.payment_term_id.note"/>
+
+                        
+
+               
+
+                    </div>
+</t>
+
+                    <!-- SALE ORDER NOTE -->
+
+                    <div t-if="not is_html_empty(doc.note)"
+                         class="az-payment-text">
+
+                           Terms and conditions :
+
+                        <span t-field="doc.note"/>
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- end of ar -->
+</div>
         </xpath>
 
     </template>
